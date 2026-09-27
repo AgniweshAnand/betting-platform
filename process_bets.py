@@ -1,36 +1,39 @@
 import csv
-
-SOURCE_CSV = "sports_betting_predictive_analysis.csv"
-TARGET_CSV = "custom_bets.csv"
-
-with open(SOURCE_CSV, mode="r", encoding="utf-8-sig") as f:
-    reader = csv.DictReader(f)
-    print("Detected columns in original CSV:", reader.fieldnames)
-    
-    first_10_rows = []
-    for i, row in enumerate(reader):
-        if i >= 10:
-            break
-        first_10_rows.append(row)
-
-target_headers = ["s.no"] + reader.fieldnames
-
-with open(TARGET_CSV, mode="w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=target_headers)
-    writer.writeheader()  
-    
-    for idx, row in enumerate(first_10_rows, start=1):
-        row["s.no"] = idx
-        writer.writerow(row)
-
-print(f"Success! Created {TARGET_CSV} with proper column headers and 50 rows.")
-
-
 import random
 
-rand_uniform = round(random.uniform(10.5, 50.5), 1)
+TARGET_CSV = "custom_bets.csv"
 
-rand_list = [round(random.uniform(10.5, 50.5), 1) for _ in range(5)]
+def get_random_bid(min_val=10.5, max_val=500.5):
+    return round(random.uniform(min_val, max_val), 1)
 
-print("Single value:", rand_uniform)
-print("List of values:", rand_list)
+headers = [
+    "s.no", "user_id", "Match_ID", "Date", "Sport", "Home_Team", "Away_Team",
+    "Home_Team_Odds", "Away_Team_Odds", "Draw_Odds",
+    "Predicted_Winner", "Actual_Winner", "bid_amount"
+]
+
+base_match = {
+    "Match_ID": "M00018",
+    "Date": "2024-03-23",
+    "Sport": "Football",
+    "Home_Team": "Lake Corey Bears",
+    "Away_Team": "Lorettaland Wolves",
+    "Home_Team_Odds": "1.4",
+    "Away_Team_Odds": "2.25",
+    "Draw_Odds": "4.28",
+    "Predicted_Winner": "Lake Corey Bears",
+    "Actual_Winner": "Draw"
+}
+
+with open(TARGET_CSV, mode="w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=headers)
+    writer.writeheader()
+
+    for i in range(1, 21):
+        row = base_match.copy()
+        row["s.no"] = i
+        row["user_id"] = f"u{i}"
+        row["bid_amount"] = get_random_bid()
+        writer.writerow(row)
+
+print(f"Successfully generated 20 rows with user_id in {TARGET_CSV}")
