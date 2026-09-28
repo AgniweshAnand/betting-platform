@@ -1,10 +1,14 @@
 import csv
 import random
 
+SOURCE_CSV = "sports_betting_predictive_analysis.csv"
 TARGET_CSV = "custom_bets.csv"
+ROW_COUNT = 20
+
 
 def get_random_bid(min_val=10.5, max_val=500.5):
     return round(random.uniform(min_val, max_val), 1)
+
 
 headers = [
     "s.no", "user_id", "Match_ID", "Date", "Sport", "Home_Team", "Away_Team",
@@ -12,28 +16,40 @@ headers = [
     "Predicted_Winner", "Actual_Winner", "bid_amount"
 ]
 
-base_match = {
-    "Match_ID": "M00018",
-    "Date": "2024-03-23",
-    "Sport": "Football",
-    "Home_Team": "Lake Corey Bears",
-    "Away_Team": "Lorettaland Wolves",
-    "Home_Team_Odds": "1.4",
-    "Away_Team_Odds": "2.25",
-    "Draw_Odds": "4.28",
-    "Predicted_Winner": "Lake Corey Bears",
-    "Actual_Winner": "Draw"
-}
+selected_match = None
+
+with open(SOURCE_CSV, mode="r", encoding="utf-8-sig") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        sport = row.get("Sport", "").strip().lower()
+        actual_winner = row.get("Actual_Winner", "").strip().lower()
+        pred_winner = row.get("Predicted_Winner", "").strip().lower()
+        home_odds = row.get("Home_Team_Odds", "").strip()
+        away_odds = row.get("Away_Team_Odds", "").strip()
+
+        # Check conditions
+        if sport == "football" and actual_winner != "draw" and pred_winner != "draw":
+            if home_odds and away_odds:
+                selected_match = row
+                break
+
+if not selected_match:
+    print("No matching football row found without a draw.")
+    exit()
+
+print(f"Selected Match: {selected_match.get('Match_ID')} | "
+      f"{selected_match.get('Home_Team')} vs {selected_match.get('Away_Team')} | "
+      f"Winner: {selected_match.get('Actual_Winner')}")
 
 with open(TARGET_CSV, mode="w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=headers)
     writer.writeheader()
 
-    for i in range(1, 21):
-        row = base_match.copy()
+    for i in range(1, ROW_COUNT + 1):
+        row = {col: selected_match.get(col, "") for col in headers if col not in ("s.no", "user_id", "bid_amount")}
         row["s.no"] = i
         row["user_id"] = f"u{i}"
         row["bid_amount"] = get_random_bid()
         writer.writerow(row)
 
-print(f"Successfully generated 20 rows with user_id in {TARGET_CSV}")
+print(f"Successfully generated {ROW_COUNT} rows in {TARGET_CSV}")
