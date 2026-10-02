@@ -2,7 +2,7 @@ import csv
 import random
 
 SOURCE_CSV = "sports_betting_predictive_analysis.csv"
-TARGET_CSV = "custom_bets.csv"
+CUSTOM_BETS_CSV = "custom_bets.csv"
 ROW_COUNT = 20
 
 
@@ -16,6 +16,7 @@ headers = [
     "Predicted_Winner", "Actual_Winner", "bid_amount"
 ]
 
+# 1. Filter for a valid Football match from the main dataset
 selected_match = None
 
 with open(SOURCE_CSV, mode="r", encoding="utf-8-sig") as f:
@@ -27,7 +28,6 @@ with open(SOURCE_CSV, mode="r", encoding="utf-8-sig") as f:
         home_odds = row.get("Home_Team_Odds", "").strip()
         away_odds = row.get("Away_Team_Odds", "").strip()
 
-        # Check conditions
         if sport == "football" and actual_winner != "draw" and pred_winner != "draw":
             if home_odds and away_odds:
                 selected_match = row
@@ -37,11 +37,11 @@ if not selected_match:
     print("No matching football row found without a draw.")
     exit()
 
-print(f"Selected Match: {selected_match.get('Match_ID')} | "
-      f"{selected_match.get('Home_Team')} vs {selected_match.get('Away_Team')} | "
-      f"Winner: {selected_match.get('Actual_Winner')}")
+print(f"Loaded Match from {SOURCE_CSV}: {selected_match.get('Match_ID')} | "
+      f"{selected_match.get('Home_Team')} vs {selected_match.get('Away_Team')}")
 
-with open(TARGET_CSV, mode="w", newline="", encoding="utf-8") as f:
+# 2. Write straight to custom_bets.csv with random user_id and bid_amount
+with open(CUSTOM_BETS_CSV, mode="w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=headers)
     writer.writeheader()
 
@@ -52,4 +52,4 @@ with open(TARGET_CSV, mode="w", newline="", encoding="utf-8") as f:
         row["bid_amount"] = get_random_bid()
         writer.writerow(row)
 
-print(f"Successfully generated {ROW_COUNT} rows in {TARGET_CSV}")
+print(f"Successfully generated {ROW_COUNT} rows in {CUSTOM_BETS_CSV}")
