@@ -9,14 +9,15 @@ streamed_rows = []
 total_bets = 0
 
 
-def calculate_payout(user_pick, actual_winner, bid_amount, home_team, home_odds, away_odds):
+def calculate_payout(user_pick, actual_winner, bid_amount, home_team, home_odds, away_odds,
+                     total_losing_bids, total_winning_bids):
     """Calculates settlement status, total payout, and net profit."""
     is_win = (user_pick.strip().lower() == actual_winner.strip().lower())
-    odds = float(home_odds) if user_pick.strip().lower() == home_team.strip().lower() else float(away_odds)
 
     if is_win:
-        payout = round(bid_amount * odds, 2)
-        profit = round(payout - bid_amount, 2)
+        extra = total_losing_bids * (bid_amount / total_winning_bids)
+        payout = round(bid_amount + extra, 2)
+        profit = round(extra, 2)
         status = "WON"
     else:
         payout = 0.0
@@ -46,6 +47,23 @@ with open(TARGET_CSV, mode="r", encoding="utf-8-sig") as f:
 print(f"\nStream finished! Total bets received: {total_bets}")
 print(f"Calculating settlements and writing to {FILTERED_CSV}...")
 
+# Calculate winning and losing bid totals
+total_winning_bids = 0.0
+total_losing_bids = 0.0
+
+for row in streamed_rows:
+    bid = float(row.get("bid_amount", 0.0))
+    home_team = row.get("Home_Team", "")
+    away_team = row.get("Away_Team", "")
+    actual_winner = row.get("Actual_Winner", "")
+    user_pick = row.get("User_Pick") or random.choice([home_team, away_team])
+    row["User_Pick"] = user_pick
+
+    if user_pick.strip().lower() == actual_winner.strip().lower():
+        total_winning_bids += bid
+    else:
+        total_losing_bids += bid
+
 # 2. Process settlements after the stream completes
 filtered_fieldnames = list(fieldnames)
 for col in ["User_Pick", "Result", "payout_amount", "net_profit"]:
@@ -64,11 +82,11 @@ with open(FILTERED_CSV, mode="w", newline="", encoding="utf-8") as f_out:
         away_odds = row.get("Away_Team_Odds", "1.0")
         bid = float(row.get("bid_amount", 0.0))
 
-        # Assign user pick if not present in raw file
         user_pick = row.get("User_Pick") or random.choice([home_team, away_team])
 
         status, payout, profit = calculate_payout(
-            user_pick, actual_winner, bid, home_team, home_odds, away_odds
+            user_pick, actual_winner, bid, home_team, home_odds, away_odds,
+            total_losing_bids, total_winning_bids
         )
 
         row["User_Pick"] = user_pick
